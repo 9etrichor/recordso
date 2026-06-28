@@ -6,6 +6,8 @@ const recordSchema = z.object({
   timestamp: z.string().optional(),
   activity: z.string().max(200).optional(),
   rating: z.enum(["GOOD", "NORMAL", "BAD"]).optional(),
+  durationHours: z.number().int().min(0).optional(),
+  durationMinutes: z.number().int().min(0).max(59).optional(),
 });
 
 export const runtime = "nodejs";
@@ -43,15 +45,22 @@ export async function PUT(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { timestamp, activity, rating } = parsed.data;
+    const { timestamp, activity, rating, durationHours, durationMinutes } = parsed.data;
+
+    const updateData: any = {
+      ...(timestamp !== undefined && { timestamp: new Date(timestamp) }),
+      ...(activity !== undefined && { activity }),
+      ...(rating !== undefined && { rating }),
+    };
+
+    if (durationHours !== undefined || durationMinutes !== undefined) {
+      const totalMinutes = (durationHours || 0) * 60 + (durationMinutes || 0);
+      updateData.durationMinutes = totalMinutes;
+    }
 
     const record = await prisma.record.update({
       where: { id },
-      data: {
-        ...(timestamp !== undefined && { timestamp: new Date(timestamp) }),
-        ...(activity !== undefined && { activity }),
-        ...(rating !== undefined && { rating }),
-      },
+      data: updateData,
     });
 
     return NextResponse.json(record);

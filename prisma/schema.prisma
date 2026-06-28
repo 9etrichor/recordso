@@ -27,14 +27,15 @@ model User {
 }
 
 model Record {
-  id         String   @id @default(cuid())
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  timestamp  DateTime
-  activity   String   @db.VarChar(200)
-  rating     Rating
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  timestamp      DateTime
+  activity       String   @db.VarChar(200)
+  rating         Rating
+  durationMinutes Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   @@index([userId, timestamp])
   @@map("records")

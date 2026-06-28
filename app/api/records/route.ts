@@ -6,6 +6,8 @@ const recordSchema = z.object({
   timestamp: z.string(),
   activity: z.string().max(200),
   rating: z.enum(["GOOD", "NORMAL", "BAD"]),
+  durationHours: z.number().int().min(0),
+  durationMinutes: z.number().int().min(0).max(59),
 });
 
 export const runtime = "nodejs";
@@ -46,9 +48,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid input data" }, { status: 400 });
     }
 
-    const { timestamp, activity, rating } = parsed.data;
+    const { timestamp, activity, rating, durationHours, durationMinutes } = parsed.data;
 
     const { prisma } = await import("@/lib/prisma");
+
+    const totalMinutes = (durationHours || 0) * 60 + (durationMinutes || 0);
 
     const record = await prisma.record.create({
       data: {
@@ -56,6 +60,7 @@ export async function POST(req: Request) {
         timestamp: new Date(timestamp),
         activity,
         rating,
+        durationMinutes: totalMinutes,
       },
     });
 
