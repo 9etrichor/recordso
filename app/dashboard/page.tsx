@@ -8,13 +8,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
 import Image from "next/image";
+import { NowButton } from "@/components/NowButton";
 
 const recordSchema = z.object({
   timestamp: z.string(),
+  timestampEnd: z.string().optional(),
   activity: z.string().min(1).max(200),
   rating: z.enum(["GOOD", "NORMAL", "BAD"]),
-  durationHours: z.number().int().min(0),
-  durationMinutes: z.number().int().min(0).max(59),
 });
 
 type RecordFormData = z.infer<typeof recordSchema>;
@@ -22,9 +22,9 @@ type RecordFormData = z.infer<typeof recordSchema>;
 type Record = {
   id: string;
   timestamp: string;
+  timestampEnd: string | null;
   activity: string;
   rating: "GOOD" | "NORMAL" | "BAD";
-  durationMinutes: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -45,12 +45,6 @@ export default function DashboardPage() {
     return localISOTime;
   };
 
-  const minutesToHoursAndMinutes = (totalMinutes: number) => {
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-    return { hours, minutes };
-  };
-
   const {
     register,
     handleSubmit,
@@ -63,8 +57,6 @@ export default function DashboardPage() {
       timestamp: getLocalDateTimeString(),
       activity: "",
       rating: "GOOD",
-      durationHours: 0,
-      durationMinutes: 0,
     },
   });
 
@@ -114,8 +106,6 @@ export default function DashboardPage() {
         timestamp: getLocalDateTimeString(),
         activity: "",
         rating: "GOOD" as const,
-        durationHours: 0,
-        durationMinutes: 0,
       });
       setIsEditing(false);
       setEditingId(null);
@@ -128,13 +118,11 @@ export default function DashboardPage() {
   const handleEdit = (record: Record) => {
     setIsEditing(true);
     setEditingId(record.id);
-    const { hours, minutes } = minutesToHoursAndMinutes(record.durationMinutes);
     reset({
       timestamp: record.timestamp.slice(0, 16),
+      timestampEnd: record.timestampEnd ? record.timestampEnd.slice(0, 16) : "",
       activity: record.activity,
       rating: record.rating,
-      durationHours: hours,
-      durationMinutes: minutes,
     });
   };
 
@@ -181,13 +169,22 @@ export default function DashboardPage() {
                 </p>
               </div>
             </div>
-            <button
-              onClick={() => signOut({ callbackUrl: "/login" })}
-              className="px-6 py-2 rounded-lg font-semibold text-white transition-colors"
-              style={{ backgroundColor: "#B05B2D" }}
-            >
-              Sign Out
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => router.push("/analysis")}
+                className="px-6 py-2 rounded-lg font-semibold text-white transition-colors"
+                style={{ backgroundColor: "#D06C33" }}
+              >
+                Analysis
+              </button>
+              <button
+                onClick={() => signOut({ callbackUrl: "/login" })}
+                className="px-6 py-2 rounded-lg font-semibold text-white transition-colors"
+                style={{ backgroundColor: "#B05B2D" }}
+              >
+                Sign Out
+              </button>
+            </div>
           </div>
         </div>
 
@@ -195,9 +192,26 @@ export default function DashboardPage() {
           {/* Form Section */}
           <div className="lg:col-span-1">
             <div className="p-6 rounded-2xl shadow-lg" style={{ backgroundColor: "#FCB797" }}>
-              <h2 className="text-2xl font-bold mb-4" style={{ color: "#482615" }}>
-                {isEditing ? "Edit Record" : "New Record"}
-              </h2>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold" style={{ color: "#482615" }}>
+                  {isEditing ? "Edit Record" : "New Record"}
+                </h2>
+                {!isEditing && (
+                  <button
+                    type="button"
+                    onClick={() => reset({
+                      timestamp: "",
+                      timestampEnd: "",
+                      activity: "",
+                      rating: "GOOD" as const,
+                    })}
+                    className="px-4 py-2 rounded-lg text-white font-medium"
+                    style={{ backgroundColor: "#D06C33" }}
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
 
               {error && (
                 <div className="mb-4 p-3 rounded-lg text-center" style={{ backgroundColor: "#FFE2D9", color: "#482615" }}>
@@ -217,18 +231,31 @@ export default function DashboardPage() {
                       className="flex-1 px-4 py-2 rounded-lg border-2 focus:outline-none"
                       style={{ borderColor: "#D06C33", backgroundColor: "#FFE2D9" }}
                     />
-                    <button
-                      type="button"
-                      onClick={() => setValue("timestamp", getLocalDateTimeString())}
-                      className="px-4 py-2 rounded-lg text-white font-medium"
-                      style={{ backgroundColor: "#B05B2D" }}
-                    >
-                      Now
-                    </button>
+                    <NowButton onClick={() => setValue("timestamp", getLocalDateTimeString())} />
                   </div>
                   {errors.timestamp && (
                     <p className="text-sm mt-1" style={{ color: "#482615" }}>
                       {errors.timestamp.message}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1" style={{ color: "#482615" }}>
+                    End Time
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="datetime-local"
+                      {...register("timestampEnd")}
+                      className="flex-1 px-4 py-2 rounded-lg border-2 focus:outline-none"
+                      style={{ borderColor: "#D06C33", backgroundColor: "#FFE2D9" }}
+                    />
+                    <NowButton onClick={() => setValue("timestampEnd", getLocalDateTimeString())} />
+                  </div>
+                  {errors.timestampEnd && (
+                    <p className="text-sm mt-1" style={{ color: "#482615" }}>
+                      {errors.timestampEnd.message}
                     </p>
                   )}
                 </div>
@@ -267,40 +294,6 @@ export default function DashboardPage() {
                   {errors.rating && (
                     <p className="text-sm mt-1" style={{ color: "#482615" }}>
                       {errors.rating.message}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: "#482615" }}>
-                    Duration
-                  </label>
-                  <div className="flex gap-2">
-                    <div className="flex-1">
-                      <input
-                        type="number"
-                        {...register("durationHours", { valueAsNumber: true })}
-                        placeholder="Hours"
-                        min="0"
-                        className="w-full px-4 py-2 rounded-lg border-2 focus:outline-none"
-                        style={{ borderColor: "#D06C33", backgroundColor: "#FFE2D9" }}
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <input
-                        type="number"
-                        {...register("durationMinutes", { valueAsNumber: true })}
-                        placeholder="Minutes"
-                        min="0"
-                        max="59"
-                        className="w-full px-4 py-2 rounded-lg border-2 focus:outline-none"
-                        style={{ borderColor: "#D06C33", backgroundColor: "#FFE2D9" }}
-                      />
-                    </div>
-                  </div>
-                  {(errors.durationHours || errors.durationMinutes) && (
-                    <p className="text-sm mt-1" style={{ color: "#482615" }}>
-                      {errors.durationHours?.message || errors.durationMinutes?.message}
                     </p>
                   )}
                 </div>
@@ -373,13 +366,10 @@ export default function DashboardPage() {
                             {record.activity}
                           </p>
                           <p className="text-sm mt-1" style={{ color: "#482615" }}>
-                            Duration:{" "}
-                            {record.durationMinutes === 0
-                              ? "not specific"
-                              : (() => {
-                                  const { hours, minutes } = minutesToHoursAndMinutes(record.durationMinutes);
-                                  return `${hours}h ${minutes}m`;
-                                })()}
+                            End Time:{" "}
+                            {record.timestampEnd
+                              ? format(new Date(record.timestampEnd), "MMM dd, yyyy HH:mm")
+                              : "not specific"}
                           </p>
                         </div>
                         <div className="flex gap-2 ml-4">

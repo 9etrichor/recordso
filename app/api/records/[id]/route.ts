@@ -4,10 +4,9 @@ import { z } from "zod";
 
 const recordSchema = z.object({
   timestamp: z.string().optional(),
+  timestampEnd: z.string().optional(),
   activity: z.string().max(200).optional(),
   rating: z.enum(["GOOD", "NORMAL", "BAD"]).optional(),
-  durationHours: z.number().int().min(0).optional(),
-  durationMinutes: z.number().int().min(0).max(59).optional(),
 });
 
 export const runtime = "nodejs";
@@ -45,17 +44,28 @@ export async function PUT(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { timestamp, activity, rating, durationHours, durationMinutes } = parsed.data;
+    const { timestamp, timestampEnd, activity, rating } = parsed.data;
 
-    const updateData: any = {
-      ...(timestamp !== undefined && { timestamp: new Date(timestamp) }),
-      ...(activity !== undefined && { activity }),
-      ...(rating !== undefined && { rating }),
+    type UpdateData = {
+      timestamp?: Date;
+      timestampEnd?: Date | null;
+      activity?: string;
+      rating?: "GOOD" | "NORMAL" | "BAD";
     };
 
-    if (durationHours !== undefined || durationMinutes !== undefined) {
-      const totalMinutes = (durationHours || 0) * 60 + (durationMinutes || 0);
-      updateData.durationMinutes = totalMinutes;
+    const updateData: UpdateData = {};
+
+    if (timestamp !== undefined) {
+      updateData.timestamp = new Date(timestamp);
+    }
+    if (timestampEnd !== undefined) {
+      updateData.timestampEnd = timestampEnd ? new Date(timestampEnd) : null;
+    }
+    if (activity !== undefined) {
+      updateData.activity = activity;
+    }
+    if (rating !== undefined) {
+      updateData.rating = rating;
     }
 
     const record = await prisma.record.update({
