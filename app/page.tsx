@@ -19,8 +19,8 @@ export default function Home() {
   }, [status, router]);
 
   return (
-    <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: "#FFE2D9" }}>
-      <p style={{ color: "#482615" }}>Loading...</p>
+    <div className="flex items-center justify-center min-h-screen">
+      <p>Loading...</p>
     </div>
   );
 }

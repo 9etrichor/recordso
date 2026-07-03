@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { format, startOfDay, endOfDay, isWithinInterval } from "date-fns";
+import { format, startOfDay, endOfDay } from "date-fns";
 import { Chart, ArcElement, Tooltip, Legend, TooltipItem } from "chart.js/auto";
 
 Chart.register(ArcElement, Tooltip, Legend);
@@ -63,12 +63,22 @@ export default function AnalysisPage() {
       const recordStart = new Date(record.timestamp);
       const recordEnd = new Date(record.timestampEnd);
 
-      // Only include records where both start and end are on the selected date
-      return (
-        isWithinInterval(recordStart, { start: dateStart, end: dateEnd }) &&
-        isWithinInterval(recordEnd, { start: dateStart, end: dateEnd })
-      );
+      // Include records that overlap with the selected date
+      return recordStart < dateEnd && recordEnd > dateStart;
     });
+  };
+
+  const calculateOverlapDuration = (record: Record) => {
+    const dateStart = startOfDay(new Date(selectedDate));
+    const dateEnd = endOfDay(new Date(selectedDate));
+    const recordStart = new Date(record.timestamp);
+    const recordEnd = new Date(record.timestampEnd!);
+
+    // Calculate the overlap between record interval and selected date interval
+    const overlapStart = recordStart < dateStart ? dateStart : recordStart;
+    const overlapEnd = recordEnd > dateEnd ? dateEnd : recordEnd;
+
+    return (overlapEnd.getTime() - overlapStart.getTime()) / 60000;
   };
 
   const calculateTimeByRating = () => {
@@ -83,11 +93,9 @@ export default function AnalysisPage() {
 
     filteredRecords.forEach((record) => {
       if (record.timestampEnd) {
-        const start = new Date(record.timestamp);
-        const end = new Date(record.timestampEnd);
-        const durationMinutes = (end.getTime() - start.getTime()) / 60000;
-        timeByRating[record.rating] += durationMinutes;
-        totalRecordedMinutes += durationMinutes;
+        const overlapMinutes = calculateOverlapDuration(record);
+        timeByRating[record.rating] += overlapMinutes;
+        totalRecordedMinutes += overlapMinutes;
       }
     });
 
@@ -119,8 +127,8 @@ export default function AnalysisPage() {
         datasets: [
           {
             data: [timeByRating.GOOD, timeByRating.NORMAL, timeByRating.BAD],
-            backgroundColor: ["#482615", "#D06C33", "#B05B2D"],
-            borderColor: ["#FFE2D9", "#FFE2D9", "#FFE2D9"],
+            backgroundColor: ["#000000", "#555555", "#999999"],
+            borderColor: ["#f5f0e1", "#f5f0e1", "#f5f0e1"],
             borderWidth: 2,
           },
         ],
@@ -131,7 +139,7 @@ export default function AnalysisPage() {
           legend: {
             position: "bottom",
             labels: {
-              color: "#482615",
+              color: "#000000",
               font: {
                 size: 14,
               },
@@ -159,25 +167,25 @@ export default function AnalysisPage() {
   }, [timeByRating]);
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#FFE2D9" }}>Loading...</div>;
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
 
   return (
-    <div className="min-h-screen p-6" style={{ backgroundColor: "#FFE2D9" }}>
+    <div className="min-h-screen p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold" style={{ color: "#482615" }}>Analysis</h1>
+          <h1 className="text-3xl" style={{ fontFamily: "var(--font-serif)", fontWeight: 300 }}>Analysis</h1>
           <button
             onClick={() => router.push("/dashboard")}
-            className="px-6 py-2 rounded-lg font-semibold text-white transition-colors"
-            style={{ backgroundColor: "#B05B2D" }}
+            className="px-6 py-2 rounded-lg font-normal transition-colors"
+            style={{ backgroundColor: "#000000", color: "#ffffff" }}
           >
             Back to Dashboard
           </button>
         </div>
 
         <div className="mb-6">
-          <label className="block text-sm font-medium mb-2" style={{ color: "#482615" }}>
+          <label className="block text-sm font-normal mb-2">
             Select Date
           </label>
           <input
@@ -186,62 +194,57 @@ export default function AnalysisPage() {
             onChange={(e) => setSelectedDate(e.target.value)}
             max={format(new Date(), "yyyy-MM-dd")}
             className="px-4 py-2 rounded-lg border-2 focus:outline-none"
-            style={{ borderColor: "#D06C33", backgroundColor: "#FCB797", color: "#482615" }}
+            style={{ borderColor: "#000000", backgroundColor: "#ffffff" }}
           />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="p-6 rounded-2xl shadow-lg" style={{ backgroundColor: "#FCB797" }}>
-            <h2 className="text-xl font-bold mb-4" style={{ color: "#482615" }}>Time Distribution</h2>
+          <div className="p-6 rounded-2xl shadow-lg border border-black/10" style={{ backgroundColor: "var(--paper-light)" }}>
+            <h2 className="text-xl mb-4" style={{ fontFamily: "var(--font-serif)", fontWeight: 300 }}>Time Distribution</h2>
             <div className="max-w-md mx-auto">
               <canvas ref={chartRef}></canvas>
             </div>
           </div>
 
-          <div className="p-6 rounded-2xl shadow-lg" style={{ backgroundColor: "#FCB797" }}>
-            <h2 className="text-xl font-bold mb-4" style={{ color: "#482615" }}>
+          <div className="p-6 rounded-2xl shadow-lg border border-black/10" style={{ backgroundColor: "var(--paper-light)" }}>
+            <h2 className="text-xl mb-4" style={{ fontFamily: "var(--font-serif)", fontWeight: 300 }}>
               Records for {format(new Date(selectedDate), "MMM dd, yyyy")}
             </h2>
             <div className="space-y-3 max-h-96 overflow-y-auto">
               {filteredRecords.length === 0 ? (
-                <p className="text-center" style={{ color: "#482615" }}>No records for this date</p>
+                <p className="text-center">No records for this date</p>
               ) : (
                 filteredRecords.map((record) => {
                   const start = new Date(record.timestamp);
                   const end = new Date(record.timestampEnd!);
-                  const durationMinutes = (end.getTime() - start.getTime()) / 60000;
-                  const hours = Math.floor(durationMinutes / 60);
-                  const mins = Math.round(durationMinutes % 60);
+                  const overlapMinutes = calculateOverlapDuration(record);
+                  const hours = Math.floor(overlapMinutes / 60);
+                  const mins = Math.round(overlapMinutes % 60);
 
                   return (
                     <div
                       key={record.id}
-                      className="p-4 rounded-lg"
-                      style={{ backgroundColor: "#FFE2D9" }}
+                      className="p-4 rounded-lg border border-black/10"
+                      style={{ backgroundColor: "#ffffff" }}
                     >
                       <div className="flex justify-between items-start mb-2">
-                        <span className="font-semibold" style={{ color: "#482615" }}>
+                        <span className="font-normal">
                           {record.activity}
                         </span>
                         <span
-                          className="px-2 py-1 rounded text-xs font-semibold"
+                          className="px-2 py-1 rounded text-xs font-normal"
                           style={{
-                            backgroundColor:
-                              record.rating === "GOOD"
-                                ? "#482615"
-                                : record.rating === "NORMAL"
-                                ? "#D06C33"
-                                : "#B05B2D",
-                            color: "#FFE2D9",
+                            backgroundColor: "#000000",
+                            color: "#ffffff",
                           }}
                         >
                           {record.rating}
                         </span>
                       </div>
-                      <div className="text-sm" style={{ color: "#482615" }}>
+                      <div className="text-sm">
                         <p>Start: {format(start, "HH:mm")}</p>
                         <p>End: {format(end, "HH:mm")}</p>
-                        <p>Duration: {hours}h {mins}m</p>
+                        <p>Duration on this date: {hours}h {mins}m</p>
                       </div>
                     </div>
                   );

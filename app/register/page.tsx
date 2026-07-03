@@ -48,21 +48,21 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#FFE2D9" }}>
-      <div className="w-full max-w-md p-8 rounded-2xl shadow-xl" style={{ backgroundColor: "#FCB797" }}>
-        <h1 className="text-3xl font-bold text-center mb-6" style={{ color: "#482615" }}>
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="w-full max-w-md p-8 rounded-2xl shadow-lg" style={{ backgroundColor: "var(--paper-light)" }}>
+        <h1 className="text-3xl text-center mb-6" style={{ fontFamily: "var(--font-serif)", fontWeight: 300 }}>
           Create Account
         </h1>
 
         {error && (
-          <div className="mb-4 p-3 rounded-lg text-center" style={{ backgroundColor: "#FFE2D9", color: "#482615" }}>
+          <div className="mb-4 p-3 rounded-lg text-center" style={{ backgroundColor: "#ffffff" }}>
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: "#482615" }}>
+            <label className="block text-sm font-normal mb-1">
               Name
             </label>
             <input
@@ -71,13 +71,13 @@ export default function RegisterPage() {
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               className="w-full px-4 py-2 rounded-lg border-2 focus:outline-none transition-colors"
-              style={{ borderColor: "#D06C33", backgroundColor: "#FFE2D9" }}
+              style={{ borderColor: "#000000", backgroundColor: "#ffffff" }}
               placeholder="Your name"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: "#482615" }}>
+            <label className="block text-sm font-normal mb-1">
               Email
             </label>
             <input
@@ -86,13 +86,13 @@ export default function RegisterPage() {
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               className="w-full px-4 py-2 rounded-lg border-2 focus:outline-none transition-colors"
-              style={{ borderColor: "#D06C33", backgroundColor: "#FFE2D9" }}
+              style={{ borderColor: "#000000", backgroundColor: "#ffffff" }}
               placeholder="your@email.com"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: "#482615" }}>
+            <label className="block text-sm font-normal mb-1">
               Password
             </label>
             <input
@@ -102,7 +102,7 @@ export default function RegisterPage() {
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               className="w-full px-4 py-2 rounded-lg border-2 focus:outline-none transition-colors"
-              style={{ borderColor: "#D06C33", backgroundColor: "#FFE2D9" }}
+              style={{ borderColor: "#000000", backgroundColor: "#ffffff" }}
               placeholder="Min. 6 characters"
             />
           </div>
@@ -110,16 +110,16 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-lg font-semibold text-white transition-colors disabled:opacity-50"
-            style={{ backgroundColor: "#B05B2D" }}
+            className="w-full py-3 rounded-lg font-normal transition-colors disabled:opacity-50"
+            style={{ backgroundColor: "#000000", color: "#ffffff" }}
           >
             {loading ? "Creating account..." : "Sign Up"}
           </button>
         </form>
 
-        <p className="text-center mt-6" style={{ color: "#482615" }}>
+        <p className="text-center mt-6">
           Already have an account?{" "}
-          <a href="/login" className="font-semibold hover:underline" style={{ color: "#D06C33" }}>
+          <a href="/login" className="font-normal hover:underline" style={{ fontFamily: "var(--font-serif)" }}>
             Sign in
           </a>
         </p>
