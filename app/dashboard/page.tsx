@@ -37,6 +37,10 @@ export default function DashboardPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [tsDate, setTsDate] = useState("");
+  const [tsTime, setTsTime] = useState("");
+  const [teDate, setTeDate] = useState("");
+  const [teTime, setTeTime] = useState("");
 
   const toLocalInput = (date: Date) => {
     const y = date.getFullYear();
@@ -60,11 +64,24 @@ export default function DashboardPage() {
   } = useForm<RecordFormData>({
     resolver: zodResolver(recordSchema),
     defaultValues: {
-      timestamp: getLocalDateTimeString(),
       activity: "",
       rating: "GOOD",
     },
   });
+
+  useEffect(() => {
+    if (tsDate && tsTime) setValue("timestamp", `${tsDate}T${tsTime}`);
+  }, [tsDate, tsTime, setValue]);
+
+  useEffect(() => {
+    if (teDate && teTime) setValue("timestampEnd", `${teDate}T${teTime}`);
+  }, [teDate, teTime, setValue]);
+
+  useEffect(() => {
+    const [d, t] = getLocalDateTimeString().split("T");
+    setTsDate(d);
+    setTsTime(t);
+  }, []);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -114,13 +131,15 @@ export default function DashboardPage() {
 
       if (!res.ok) throw new Error("Failed to save record");
 
-      reset({
-        timestamp: getLocalDateTimeString(),
-        activity: "",
-        rating: "GOOD" as const,
-      });
+      const n = getLocalDateTimeString();
+      const [d, t] = n.split("T");
+      setTsDate(d);
+      setTsTime(t);
+      setTeDate("");
+      setTeTime("");
       setIsEditing(false);
       setEditingId(null);
+      reset({ activity: "", rating: "GOOD" as const });
       fetchRecords();
     } catch {
       setError("Failed to save record");
@@ -130,12 +149,18 @@ export default function DashboardPage() {
   const handleEdit = (record: Record) => {
     setIsEditing(true);
     setEditingId(record.id);
-    reset({
-      timestamp: toLocalInput(new Date(record.timestamp)),
-      timestampEnd: record.timestampEnd ? toLocalInput(new Date(record.timestampEnd)) : "",
-      activity: record.activity,
-      rating: record.rating,
-    });
+    const [td, tt] = toLocalInput(new Date(record.timestamp)).split("T");
+    setTsDate(td);
+    setTsTime(tt);
+    if (record.timestampEnd) {
+      const [ed, et] = toLocalInput(new Date(record.timestampEnd)).split("T");
+      setTeDate(ed);
+      setTeTime(et);
+    } else {
+      setTeDate("");
+      setTeTime("");
+    }
+    reset({ activity: record.activity, rating: record.rating });
   };
 
   const handleDelete = async (id: string) => {
@@ -153,6 +178,11 @@ export default function DashboardPage() {
   const handleCancelEdit = () => {
     setIsEditing(false);
     setEditingId(null);
+    const [d, t] = getLocalDateTimeString().split("T");
+    setTsDate(d);
+    setTsTime(t);
+    setTeDate("");
+    setTeTime("");
     reset();
   };
 
@@ -215,12 +245,13 @@ export default function DashboardPage() {
                 {!isEditing && (
                   <button
                     type="button"
-                    onClick={() => reset({
-                      timestamp: "",
-                      timestampEnd: "",
-                      activity: "",
-                      rating: "GOOD" as const,
-                    })}
+                    onClick={() => {
+                      setTsDate("");
+                      setTsTime("");
+                      setTeDate("");
+                      setTeTime("");
+                      reset({ activity: "", rating: "GOOD" as const });
+                    }}
                     className="px-4 py-2 rounded-lg font-normal border-2"
                     style={{ borderColor: "#000000", color: "#000000" }}
                   >
@@ -242,12 +273,30 @@ export default function DashboardPage() {
                   </label>
                   <div className="flex gap-2">
                     <input
-                      type="datetime-local"
-                      {...register("timestamp")}
+                      type="date"
+                      value={tsDate}
+                      onChange={(e) => setTsDate(e.target.value)}
                       className="min-w-0 flex-1 px-4 py-2 rounded-lg border-2 focus:outline-none"
                       style={{ borderColor: "#000000", backgroundColor: "#ffffff" }}
                     />
-                    <NowButton onClick={() => setValue("timestamp", getLocalDateTimeString())} />
+                    <input
+                      type="text"
+                      value={tsTime}
+                      onChange={(e) => {
+                        const v = e.target.value.replace(/\D/g, "").slice(0, 4);
+                        if (v.length <= 2) setTsTime(v);
+                        else setTsTime(`${v.slice(0, 2)}:${v.slice(2)}`);
+                      }}
+                      placeholder="HH:mm"
+                      className="min-w-0 w-28 px-3 py-2 rounded-lg border-2 focus:outline-none text-center"
+                      style={{ borderColor: "#000000", backgroundColor: "#ffffff" }}
+                    />
+                    <NowButton onClick={() => {
+                      const n = getLocalDateTimeString();
+                      const [d, t] = n.split("T");
+                      setTsDate(d);
+                      setTsTime(t);
+                    }} />
                   </div>
                   {errors.timestamp && (
                     <p className="text-sm mt-1">
@@ -262,12 +311,30 @@ export default function DashboardPage() {
                   </label>
                   <div className="flex gap-2">
                     <input
-                      type="datetime-local"
-                      {...register("timestampEnd")}
+                      type="date"
+                      value={teDate}
+                      onChange={(e) => setTeDate(e.target.value)}
                       className="min-w-0 flex-1 px-4 py-2 rounded-lg border-2 focus:outline-none"
                       style={{ borderColor: "#000000", backgroundColor: "#ffffff" }}
                     />
-                    <NowButton onClick={() => setValue("timestampEnd", getLocalDateTimeString())} />
+                    <input
+                      type="text"
+                      value={teTime}
+                      onChange={(e) => {
+                        const v = e.target.value.replace(/\D/g, "").slice(0, 4);
+                        if (v.length <= 2) setTeTime(v);
+                        else setTeTime(`${v.slice(0, 2)}:${v.slice(2)}`);
+                      }}
+                      placeholder="HH:mm"
+                      className="min-w-0 w-28 px-3 py-2 rounded-lg border-2 focus:outline-none text-center"
+                      style={{ borderColor: "#000000", backgroundColor: "#ffffff" }}
+                    />
+                    <NowButton onClick={() => {
+                      const n = getLocalDateTimeString();
+                      const [d, t] = n.split("T");
+                      setTeDate(d);
+                      setTeTime(t);
+                    }} />
                   </div>
                   {errors.timestampEnd && (
                     <p className="text-sm mt-1">
