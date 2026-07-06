@@ -3,7 +3,7 @@ export function NowButton({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="px-4 py-2 rounded-lg font-normal"
+      className="w-[68px] py-2 rounded-lg font-normal text-center"
       style={{ backgroundColor: "#000000", color: "#ffffff" }}
     >
       Now

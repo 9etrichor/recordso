@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -9,6 +9,7 @@ import { z } from "zod";
 import { format } from "date-fns";
 
 import { NowButton } from "@/components/NowButton";
+import { DatePicker } from "@/components/DatePicker";
 
 const recordSchema = z.object({
   timestamp: z.string(),
@@ -41,6 +42,14 @@ export default function DashboardPage() {
   const [tsTime, setTsTime] = useState("");
   const [teDate, setTeDate] = useState("");
   const [teTime, setTeTime] = useState("");
+  const [recordFilterDate, setRecordFilterDate] = useState(() => {
+    const today = format(new Date(), "yyyy-MM-dd");
+    const parts = today.split("-");
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  });
+  const [formCollapsed, setFormCollapsed] = useState(true);
+  const [recordsCollapsed, setRecordsCollapsed] = useState(true);
+  const recordsScrollRef = useRef<HTMLDivElement>(null);
 
   const toLocalInput = (date: Date) => {
     const y = date.getFullYear();
@@ -54,6 +63,20 @@ export default function DashboardPage() {
   const toISO = (localInput: string) => new Date(localInput).toISOString();
 
   const getLocalDateTimeString = () => toLocalInput(new Date());
+
+  const toDdMmYyyy = (yyyymmdd: string) => {
+    if (!yyyymmdd) return "";
+    const parts = yyyymmdd.split("-");
+    if (parts.length !== 3) return "";
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  };
+
+  const toYyyyMmDd = (ddmmyyyy: string) => {
+    if (!ddmmyyyy) return "";
+    const parts = ddmmyyyy.split("/");
+    if (parts.length !== 3) return "";
+    return `${parts[2]}-${parts[1]}-${parts[0]}`;
+  };
 
   const {
     register,
@@ -70,16 +93,16 @@ export default function DashboardPage() {
   });
 
   useEffect(() => {
-    if (tsDate && tsTime) setValue("timestamp", `${tsDate}T${tsTime}`);
+    if (tsDate && tsTime) setValue("timestamp", `${toYyyyMmDd(tsDate)}T${tsTime}`);
   }, [tsDate, tsTime, setValue]);
 
   useEffect(() => {
-    if (teDate && teTime) setValue("timestampEnd", `${teDate}T${teTime}`);
+    if (teDate && teTime) setValue("timestampEnd", `${toYyyyMmDd(teDate)}T${teTime}`);
   }, [teDate, teTime, setValue]);
 
   useEffect(() => {
     const [d, t] = getLocalDateTimeString().split("T");
-    setTsDate(d);
+    setTsDate(toDdMmYyyy(d));
     setTsTime(t);
   }, []);
 
@@ -133,7 +156,7 @@ export default function DashboardPage() {
 
       const n = getLocalDateTimeString();
       const [d, t] = n.split("T");
-      setTsDate(d);
+      setTsDate(toDdMmYyyy(d));
       setTsTime(t);
       setTeDate("");
       setTeTime("");
@@ -150,11 +173,11 @@ export default function DashboardPage() {
     setIsEditing(true);
     setEditingId(record.id);
     const [td, tt] = toLocalInput(new Date(record.timestamp)).split("T");
-    setTsDate(td);
+    setTsDate(toDdMmYyyy(td));
     setTsTime(tt);
     if (record.timestampEnd) {
       const [ed, et] = toLocalInput(new Date(record.timestampEnd)).split("T");
-      setTeDate(ed);
+      setTeDate(toDdMmYyyy(ed));
       setTeTime(et);
     } else {
       setTeDate("");
@@ -179,7 +202,7 @@ export default function DashboardPage() {
     setIsEditing(false);
     setEditingId(null);
     const [d, t] = getLocalDateTimeString().split("T");
-    setTsDate(d);
+    setTsDate(toDdMmYyyy(d));
     setTsTime(t);
     setTeDate("");
     setTeTime("");
@@ -188,18 +211,18 @@ export default function DashboardPage() {
 
   if (status === "loading" || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center overflow-x-hidden max-w-full">
         <div>Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen">
-      <div className="max-w-6xl mx-auto p-6">
+    <div className="min-h-screen overflow-x-hidden max-w-full">
+      <div className="max-w-6xl mx-auto p-4 sm:p-6">
         {/* User Info Header */}
-        <div className="p-6 rounded-2xl shadow-lg mb-6 border border-black/10" style={{ backgroundColor: "var(--paper-light)" }}>
-          <div className="flex justify-between items-center">
+        <div className="p-4 sm:p-6 rounded-2xl shadow-lg mb-6 border border-black/10" style={{ backgroundColor: "var(--paper-light)" }}>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex items-center gap-3">
               <span className="text-4xl leading-none" style={{ fontFamily: "var(--font-serif)", fontWeight: 300 }}>RS</span>
               <div>
@@ -208,24 +231,24 @@ export default function DashboardPage() {
                 </p>
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2 w-full sm:w-auto">
               <button
                 onClick={() => router.push("/about")}
-                className="px-6 py-2 rounded-lg border-2 transition-colors"
+                className="flex-1 sm:flex-none px-4 sm:px-6 py-2 rounded-lg border-2 transition-colors text-sm"
                 style={{ borderColor: "#000000", color: "#000000", fontWeight: 300 }}
               >
                 About
               </button>
               <button
                 onClick={() => router.push("/analysis")}
-                className="px-6 py-2 rounded-lg transition-colors"
+                className="flex-1 sm:flex-none px-4 sm:px-6 py-2 rounded-lg transition-colors text-sm"
                 style={{ backgroundColor: "#000000", color: "#ffffff", fontWeight: 300 }}
               >
                 Analysis
               </button>
               <button
                 onClick={() => signOut({ callbackUrl: "/login" })}
-                className="px-6 py-2 rounded-lg border-2 transition-colors"
+                className="flex-1 sm:flex-none px-4 sm:px-6 py-2 rounded-lg border-2 transition-colors text-sm"
                 style={{ borderColor: "#000000", color: "#000000", fontWeight: 300 }}
               >
                 Sign Out
@@ -237,11 +260,29 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Form Section */}
           <div className="lg:col-span-1">
-            <div className="p-6 rounded-2xl shadow-lg border border-black/10" style={{ backgroundColor: "var(--paper-light)" }}>
+            <div className="p-4 sm:p-6 rounded-2xl shadow-lg border border-black/10" style={{ backgroundColor: "var(--paper-light)" }}>
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl" style={{ fontFamily: "var(--font-serif)", fontWeight: 300 }}>
-                  {isEditing ? "Edit Record" : "New Record"}
-                </h2>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setFormCollapsed(!formCollapsed)}
+                    className="sm:hidden p-1 rounded transition-colors hover:bg-black/10"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className={`h-4 w-4 transition-transform ${formCollapsed ? "" : "rotate-90"}`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                  <h2 className="text-xl sm:text-2xl" style={{ fontFamily: "var(--font-serif)", fontWeight: 300 }}>
+                    {isEditing ? "Edit Record" : "New Record"}
+                  </h2>
+                </div>
                 {!isEditing && (
                   <button
                     type="button"
@@ -252,7 +293,7 @@ export default function DashboardPage() {
                       setTeTime("");
                       reset({ activity: "", rating: "GOOD" as const });
                     }}
-                    className="px-4 py-2 rounded-lg font-normal border-2"
+                    className="px-4 py-2 rounded-lg font-normal border-2 text-sm"
                     style={{ borderColor: "#000000", color: "#000000" }}
                   >
                     Clear
@@ -260,43 +301,42 @@ export default function DashboardPage() {
                 )}
               </div>
 
-              {error && (
-                <div className="mb-4 p-3 rounded-lg text-center" style={{ backgroundColor: "#ffffff" }}>
-                  {error}
-                </div>
-              )}
+              <div className={`${formCollapsed ? "hidden" : "block"} sm:block`}>
+                {error && (
+                  <div className="mb-4 p-3 rounded-lg text-center text-sm" style={{ backgroundColor: "#ffffff" }}>
+                    {error}
+                  </div>
+                )}
 
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <div>
                   <label className="block text-sm font-normal mb-1">
                     Timestamp
                   </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="date"
-                      value={tsDate}
-                      onChange={(e) => setTsDate(e.target.value)}
-                      className="min-w-0 flex-1 px-4 py-2 rounded-lg border-2 focus:outline-none"
-                      style={{ borderColor: "#000000", backgroundColor: "#ffffff" }}
-                    />
-                    <input
-                      type="text"
-                      value={tsTime}
-                      onChange={(e) => {
-                        const v = e.target.value.replace(/\D/g, "").slice(0, 4);
-                        if (v.length <= 2) setTsTime(v);
-                        else setTsTime(`${v.slice(0, 2)}:${v.slice(2)}`);
-                      }}
-                      placeholder="HH:mm"
-                      className="min-w-0 w-28 px-3 py-2 rounded-lg border-2 focus:outline-none text-center"
-                      style={{ borderColor: "#000000", backgroundColor: "#ffffff" }}
-                    />
-                    <NowButton onClick={() => {
-                      const n = getLocalDateTimeString();
-                      const [d, t] = n.split("T");
-                      setTsDate(d);
-                      setTsTime(t);
-                    }} />
+                  <div className="flex flex-col sm:flex-row lg:flex-col gap-2">
+                    <DatePicker value={tsDate} onChange={setTsDate} />
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={tsTime}
+                        onChange={(e) => {
+                          const v = e.target.value.replace(/\D/g, "").slice(0, 4);
+                          if (v.length <= 2) setTsTime(v);
+                          else setTsTime(`${v.slice(0, 2)}:${v.slice(2)}`);
+                        }}
+                        placeholder="HH:mm"
+                        className="w-20 sm:w-28 px-3 py-2 rounded-lg border-2 focus:outline-none text-center"
+                        style={{ borderColor: "#000000", backgroundColor: "#ffffff" }}
+                      />
+                      <div className="ml-auto">
+                        <NowButton onClick={() => {
+                          const n = getLocalDateTimeString();
+                          const [d, t] = n.split("T");
+                          setTsDate(toDdMmYyyy(d));
+                          setTsTime(t);
+                        }} />
+                      </div>
+                    </div>
                   </div>
                   {errors.timestamp && (
                     <p className="text-sm mt-1">
@@ -309,32 +349,30 @@ export default function DashboardPage() {
                   <label className="block text-sm font-normal mb-1">
                     End Time
                   </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="date"
-                      value={teDate}
-                      onChange={(e) => setTeDate(e.target.value)}
-                      className="min-w-0 flex-1 px-4 py-2 rounded-lg border-2 focus:outline-none"
-                      style={{ borderColor: "#000000", backgroundColor: "#ffffff" }}
-                    />
-                    <input
-                      type="text"
-                      value={teTime}
-                      onChange={(e) => {
-                        const v = e.target.value.replace(/\D/g, "").slice(0, 4);
-                        if (v.length <= 2) setTeTime(v);
-                        else setTeTime(`${v.slice(0, 2)}:${v.slice(2)}`);
-                      }}
-                      placeholder="HH:mm"
-                      className="min-w-0 w-28 px-3 py-2 rounded-lg border-2 focus:outline-none text-center"
-                      style={{ borderColor: "#000000", backgroundColor: "#ffffff" }}
-                    />
-                    <NowButton onClick={() => {
-                      const n = getLocalDateTimeString();
-                      const [d, t] = n.split("T");
-                      setTeDate(d);
-                      setTeTime(t);
-                    }} />
+                  <div className="flex flex-col sm:flex-row lg:flex-col gap-2">
+                    <DatePicker value={teDate} onChange={setTeDate} />
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={teTime}
+                        onChange={(e) => {
+                          const v = e.target.value.replace(/\D/g, "").slice(0, 4);
+                          if (v.length <= 2) setTeTime(v);
+                          else setTeTime(`${v.slice(0, 2)}:${v.slice(2)}`);
+                        }}
+                        placeholder="HH:mm"
+                        className="w-20 sm:w-28 px-3 py-2 rounded-lg border-2 focus:outline-none text-center"
+                        style={{ borderColor: "#000000", backgroundColor: "#ffffff" }}
+                      />
+                      <div className="ml-auto">
+                        <NowButton onClick={() => {
+                          const n = getLocalDateTimeString();
+                          const [d, t] = n.split("T");
+                          setTeDate(toDdMmYyyy(d));
+                          setTeTime(t);
+                        }} />
+                      </div>
+                    </div>
                   </div>
                   {errors.timestampEnd && (
                     <p className="text-sm mt-1">
@@ -385,7 +423,7 @@ export default function DashboardPage() {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="flex-1 py-2 rounded-lg font-normal transition-colors disabled:opacity-50"
+                    className="flex-1 py-2 rounded-lg font-normal transition-colors disabled:opacity-50 text-sm"
                     style={{ backgroundColor: "#000000", color: "#ffffff" }}
                   >
                     {isSubmitting ? "Saving..." : isEditing ? "Update" : "Create"}
@@ -394,7 +432,7 @@ export default function DashboardPage() {
                     <button
                       type="button"
                       onClick={handleCancelEdit}
-                      className="px-4 py-2 rounded-lg font-normal border-2 transition-colors"
+                      className="px-4 py-2 rounded-lg font-normal border-2 transition-colors text-sm"
                       style={{ borderColor: "#000000", color: "#000000" }}
                     >
                       Cancel
@@ -402,31 +440,61 @@ export default function DashboardPage() {
                   )}
                 </div>
               </form>
+              </div>
             </div>
           </div>
 
           {/* Records List */}
           <div className="lg:col-span-2">
-            <div className="p-6 rounded-2xl shadow-lg border border-black/10" style={{ backgroundColor: "var(--paper-light)" }}>
-              <h2 className="text-2xl mb-4" style={{ fontFamily: "var(--font-serif)", fontWeight: 300 }}>
-                Your Records
-              </h2>
+            <div className="p-4 sm:p-6 rounded-2xl shadow-lg border border-black/10" style={{ backgroundColor: "var(--paper-light)" }}>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setRecordsCollapsed(!recordsCollapsed)}
+                    className="sm:hidden p-1 rounded transition-colors hover:bg-black/10"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className={`h-4 w-4 transition-transform ${recordsCollapsed ? "" : "rotate-90"}`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                  <h2 className="text-xl sm:text-2xl" style={{ fontFamily: "var(--font-serif)", fontWeight: 300 }}>
+                    Your Records
+                  </h2>
+                </div>
+                <DatePicker value={recordFilterDate} onChange={setRecordFilterDate} />
+              </div>
 
-              {records.length === 0 ? (
-                <p className="text-center py-8">
-                  No records yet. Create your first one!
-                </p>
-              ) : (
-                <div className="space-y-3">
-                  {records.map((record) => (
+              <div className={`${recordsCollapsed ? "hidden" : "block"} sm:block`}>
+              {(() => {
+                const filteredRecords = records.filter((record) => {
+                  const d = format(new Date(record.timestamp), "dd/MM/yyyy");
+                  return d === recordFilterDate;
+                });
+
+                return filteredRecords.length === 0 ? (
+                  <p className="text-center py-8 text-sm">
+                    No records on this date.
+                  </p>
+                ) : (
+                  <>
+                    <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1" ref={recordsScrollRef}>
+                    {filteredRecords.map((record) => (
                     <div
                       key={record.id}
                       className="p-4 rounded-lg border border-black/10"
                       style={{ backgroundColor: "#ffffff" }}
                     >
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
+                      <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2 flex-wrap">
                             <span
                               className="px-2 py-1 rounded text-xs font-normal"
                               style={{
@@ -437,30 +505,30 @@ export default function DashboardPage() {
                               {record.rating}
                             </span>
                             <span className="text-sm">
-                              {format(new Date(record.timestamp), "MMM dd, yyyy HH:mm")}
+                              {format(new Date(record.timestamp), "dd / MM / yyyy HH:mm")}
                             </span>
                           </div>
-                          <p className="font-normal">
+                          <p className="font-normal break-words">
                             {record.activity}
                           </p>
                           <p className="text-sm mt-1">
-                            End Time:{" "}
+                            End:{" "}
                             {record.timestampEnd
-                              ? format(new Date(record.timestampEnd), "MMM dd, yyyy HH:mm")
+                              ? format(new Date(record.timestampEnd), "dd / MM / yyyy HH:mm")
                               : "not specific"}
                           </p>
                         </div>
-                        <div className="flex gap-2 ml-4">
+                        <div className="flex gap-2 w-full sm:w-auto">
                           <button
                             onClick={() => handleEdit(record)}
-                            className="px-3 py-1 rounded text-sm font-normal border-2 transition-colors"
+                            className="flex-1 sm:flex-none px-3 py-1 rounded text-sm font-normal border-2 transition-colors"
                             style={{ borderColor: "#000000", color: "#000000" }}
                           >
                             Edit
                           </button>
                           <button
                             onClick={() => handleDelete(record.id)}
-                            className="px-3 py-1 rounded text-sm font-normal transition-colors"
+                            className="flex-1 sm:flex-none px-3 py-1 rounded text-sm font-normal transition-colors"
                             style={{ backgroundColor: "#000000", color: "#ffffff" }}
                           >
                             Delete
@@ -470,7 +538,21 @@ export default function DashboardPage() {
                     </div>
                   ))}
                 </div>
-              )}
+                <div className="flex justify-center mt-2">
+                  <button
+                    type="button"
+                    onClick={() => recordsScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" })}
+                    className="p-2 rounded-full border-2 transition-colors hover:bg-black/10"
+                    style={{ borderColor: "#000000", color: "#000000", backgroundColor: "#ffffff" }}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+                    </svg>
+                  </button>
+                </div>
+              </>
+            )})()}
+              </div>
             </div>
           </div>
         </div>

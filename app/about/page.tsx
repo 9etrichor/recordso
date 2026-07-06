@@ -6,22 +6,22 @@ export default function AboutPage() {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen p-6">
+    <div className="min-h-screen p-4 sm:p-6 overflow-x-hidden max-w-full">
       <div className="max-w-3xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl" style={{ fontFamily: "var(--font-serif)", fontWeight: 300 }}>About</h1>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+          <h1 className="text-2xl sm:text-3xl" style={{ fontFamily: "var(--font-serif)", fontWeight: 300 }}>About</h1>
           <button
             onClick={() => router.push("/dashboard")}
-            className="px-6 py-2 rounded-lg transition-colors"
+            className="w-full sm:w-auto px-6 py-2 rounded-lg transition-colors text-sm"
             style={{ backgroundColor: "#000000", color: "#ffffff", fontWeight: 300 }}
           >
             Back to Dashboard
           </button>
         </div>
 
-        <div className="p-8 rounded-2xl shadow-lg border border-black/10 space-y-6" style={{ backgroundColor: "var(--paper-light)" }}>
+        <div className="p-6 sm:p-8 rounded-2xl shadow-lg border border-black/10 space-y-6" style={{ backgroundColor: "var(--paper-light)" }}>
           <section>
-            <h2 className="text-2xl mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 300 }}>What is recordso?</h2>
+            <h2 className="text-xl sm:text-2xl mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 300 }}>What is recordso?</h2>
             <p className="leading-relaxed">
               recordso is a time-tracking and activity-logging tool that helps you understand how you spend your day.
               Record what you do, when you do it, and rate each activity — then visualize your time distribution
@@ -30,7 +30,7 @@ export default function AboutPage() {
           </section>
 
           <section>
-            <h2 className="text-2xl mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 300 }}>How it works</h2>
+            <h2 className="text-xl sm:text-2xl mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 300 }}>How it works</h2>
             <ol className="list-decimal list-inside space-y-2 leading-relaxed">
               <li><strong>Record</strong> an activity with a timestamp, optional end time, and a rating (Good / Normal / Bad).</li>
               <li><strong>Review</strong> your records on the dashboard, edit or delete them as needed.</li>
@@ -39,7 +39,7 @@ export default function AboutPage() {
           </section>
 
           <section>
-            <h2 className="text-2xl mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 300 }}>Features</h2>
+            <h2 className="text-xl sm:text-2xl mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 300 }}>Features</h2>
             <ul className="list-disc list-inside space-y-2 leading-relaxed">
               <li>Quick &mdash; log activities with a timestamp and optional duration</li>
               <li>Rate each activity as Good, Normal, or Bad</li>

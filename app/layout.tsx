@@ -28,7 +28,7 @@ export default function RootLayout({
       lang="en"
       className={`${jetbrainsMono.variable} ${playfairDisplay.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col max-w-full overflow-x-hidden">
         <Providers>{children}</Providers>
       </body>
     </html>

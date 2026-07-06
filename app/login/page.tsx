@@ -46,14 +46,14 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="w-full max-w-md p-8 rounded-2xl shadow-lg" style={{ backgroundColor: "var(--paper-light)" }}>
-        <h1 className="text-3xl text-center mb-6" style={{ fontFamily: "var(--font-serif)", fontWeight: 300 }}>
+    <div className="min-h-screen flex items-center justify-center p-4 overflow-x-hidden max-w-full">
+      <div className="w-full max-w-md p-6 sm:p-8 rounded-2xl shadow-lg" style={{ backgroundColor: "var(--paper-light)" }}>
+        <h1 className="text-2xl sm:text-3xl text-center mb-6" style={{ fontFamily: "var(--font-serif)", fontWeight: 300 }}>
           Welcome Back
         </h1>
 
         {error && (
-          <div className="mb-4 p-3 rounded-lg text-center" style={{ backgroundColor: "#ffffff" }}>
+          <div className="mb-4 p-3 rounded-lg text-center text-sm" style={{ backgroundColor: "#ffffff" }}>
             {error}
           </div>
         )}
@@ -92,14 +92,14 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-lg font-normal transition-colors disabled:opacity-50"
+            className="w-full py-3 rounded-lg font-normal transition-colors disabled:opacity-50 text-sm"
             style={{ backgroundColor: "#000000", color: "#ffffff" }}
           >
             {loading ? "Signing in..." : "Sign In"}
           </button>
         </form>
 
-        <p className="text-center mt-6">
+        <p className="text-center mt-6 text-sm">
           Don&apos;t have an account?{" "}
           <a href="/register" className="font-normal hover:underline" style={{ fontFamily: "var(--font-serif)" }}>
             Sign up
