@@ -498,8 +498,9 @@ export default function DashboardPage() {
                             <span
                               className="px-2 py-1 rounded text-xs font-normal"
                               style={{
-                                backgroundColor: "#000000",
-                                color: "#ffffff",
+                                backgroundColor: record.rating === "GOOD" ? "#fefefc" : record.rating === "NORMAL" ? "#555555" : "#999999",
+                                color: record.rating === "GOOD" ? "#191816" : "#ffffff",
+                                border: record.rating === "GOOD" ? "1px solid #ccc" : "none",
                               }}
                             >
                               {record.rating}
