@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { format, startOfDay, endOfDay } from "date-fns";
+import { useQuery } from "@tanstack/react-query";
 import { Chart, ArcElement, Tooltip, Legend, TooltipItem } from "chart.js/auto";
 import { DatePicker } from "@/components/DatePicker";
 
@@ -33,11 +34,8 @@ export default function AnalysisPage() {
   const [chartCollapsed, setChartCollapsed] = useState(true);
   const [recordsCollapsed, setRecordsCollapsed] = useState(true);
   const [ratingFilter, setRatingFilter] = useState<"ALL" | "GOOD" | "NORMAL" | "BAD">("ALL");
-  const [records, setRecords] = useState<Record[]>([]);
-  const [loading, setLoading] = useState(true);
   const chartRef = useRef<HTMLCanvasElement>(null);
   const chartInstanceRef = useRef<Chart | null>(null);
-  const hasFetchedRef = useRef(false);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -45,30 +43,22 @@ export default function AnalysisPage() {
     }
   }, [status, router]);
 
-  useEffect(() => {
-    if (status === "authenticated" && !hasFetchedRef.current) {
-      hasFetchedRef.current = true;
-      const fetchRecords = async () => {
-        try {
-          const res = await fetch("/api/records");
-          if (!res.ok) throw new Error("Failed to fetch records");
-          const data = await res.json();
-          setRecords(data);
-        } catch {
-          console.error("Failed to fetch records");
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchRecords();
-    }
-  }, [status]);
-
   const parseDate = (ddmmyyyy: string) => {
     const parts = ddmmyyyy.split("/");
     if (parts.length !== 3) return new Date();
     return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
   };
+
+  const { data: records = [], isLoading } = useQuery<Record[]>({
+    queryKey: ["records", { viewMode, selectedDate, weekOffset, monthOffset }],
+    queryFn: async () => {
+      const { start, end } = getViewRange(viewMode);
+      const res = await fetch(`/api/records?startDate=${encodeURIComponent(start.toISOString())}&endDate=${encodeURIComponent(end.toISOString())}`);
+      if (!res.ok) throw new Error("Failed to fetch records");
+      return res.json();
+    },
+    enabled: status === "authenticated",
+  });
 
   const getViewRange = (mode: "date" | "week" | "month") => {
     if (mode === "date") {
@@ -229,7 +219,7 @@ export default function AnalysisPage() {
     };
   }, [ratingFilter, selectedDate, records, viewMode, weekOffset, monthOffset]);
 
-  if (loading) {
+  if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center overflow-x-hidden max-w-full">Loading...</div>;
   }
 

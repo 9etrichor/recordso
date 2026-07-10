@@ -11,7 +11,7 @@ const recordSchema = z.object({
 
 export const runtime = "nodejs";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const session = await auth();
 
@@ -19,10 +19,25 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { searchParams } = new URL(req.url);
+    const startDate = searchParams.get("startDate");
+    const endDate = searchParams.get("endDate");
+
     const { prisma } = await import("@/lib/prisma");
 
+    const where: Record<string, unknown> = { userId: session.user.id };
+
+    if (startDate || endDate) {
+      const start = startDate ? new Date(startDate) : new Date("1970-01-01");
+      const end = endDate ? new Date(endDate) : new Date("2100-01-01");
+      where.OR = [
+        { timestamp: { lt: end }, timestampEnd: { gt: start } },
+        { timestampEnd: null, timestamp: { gte: start, lt: end } },
+      ];
+    }
+
     const records = await prisma.record.findMany({
-      where: { userId: session.user.id },
+      where: where as any,
       orderBy: { timestamp: "desc" },
     });
 

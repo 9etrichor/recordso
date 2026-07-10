@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { format } from "date-fns";
+import { format, startOfDay, endOfDay } from "date-fns";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { NowButton } from "@/components/NowButton";
 import { DatePicker } from "@/components/DatePicker";
@@ -33,8 +34,7 @@ type Record = {
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [records, setRecords] = useState<Record[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -50,6 +50,25 @@ export default function DashboardPage() {
   const [formCollapsed, setFormCollapsed] = useState(true);
   const [recordsCollapsed, setRecordsCollapsed] = useState(true);
   const recordsScrollRef = useRef<HTMLDivElement>(null);
+
+  const parseDate = (ddmmyyyy: string) => {
+    const parts = ddmmyyyy.split("/");
+    if (parts.length !== 3) return new Date();
+    return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+  };
+
+  const { data: records = [], isLoading } = useQuery<Record[]>({
+    queryKey: ["records", { filterDate: recordFilterDate }],
+    queryFn: async () => {
+      const parsed = parseDate(recordFilterDate);
+      const startDate = startOfDay(parsed).toISOString();
+      const endDate = endOfDay(parsed).toISOString();
+      const res = await fetch(`/api/records?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`);
+      if (!res.ok) throw new Error("Failed to fetch records");
+      return res.json();
+    },
+    enabled: !!session?.user,
+  });
 
   const toLocalInput = (date: Date) => {
     const y = date.getFullYear();
@@ -112,28 +131,6 @@ export default function DashboardPage() {
     }
   }, [status, router]);
 
-  const fetchRecords = useCallback(async () => {
-    try {
-      const res = await fetch("/api/records");
-      if (!res.ok) throw new Error("Failed to fetch records");
-      const data = await res.json();
-      setRecords(data);
-    } catch {
-      setError("Failed to load records");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (session?.user) {
-      const loadData = async () => {
-        await fetchRecords();
-      };
-      loadData();
-    }
-  }, [session, fetchRecords]);
-
   const onSubmit = async (data: RecordFormData) => {
     setError("");
     try {
@@ -163,7 +160,7 @@ export default function DashboardPage() {
       setIsEditing(false);
       setEditingId(null);
       reset({ activity: "", rating: "GOOD" as const });
-      fetchRecords();
+      queryClient.invalidateQueries({ queryKey: ["records"] });
     } catch {
       setError("Failed to save record");
     }
@@ -192,7 +189,7 @@ export default function DashboardPage() {
     try {
       const res = await fetch(`/api/records/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete record");
-      fetchRecords();
+      queryClient.invalidateQueries({ queryKey: ["records"] });
     } catch {
       setError("Failed to delete record");
     }
@@ -209,7 +206,7 @@ export default function DashboardPage() {
     reset();
   };
 
-  if (status === "loading" || loading) {
+  if (status === "loading" || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center overflow-x-hidden max-w-full">
         <div>Loading...</div>
@@ -473,20 +470,14 @@ export default function DashboardPage() {
               </div>
 
               <div className={`${recordsCollapsed ? "hidden" : "block"} sm:block`}>
-              {(() => {
-                const filteredRecords = records.filter((record) => {
-                  const d = format(new Date(record.timestamp), "dd/MM/yyyy");
-                  return d === recordFilterDate;
-                });
-
-                return filteredRecords.length === 0 ? (
+              {records.length === 0 ? (
                   <p className="text-center py-8 text-sm">
                     No records on this date.
                   </p>
                 ) : (
                   <>
                     <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1" ref={recordsScrollRef}>
-                    {filteredRecords.map((record) => (
+                    {records.map((record) => (
                     <div
                       key={record.id}
                       className="p-4 rounded-lg border border-black/10"
@@ -552,7 +543,7 @@ export default function DashboardPage() {
                   </button>
                 </div>
               </>
-            )})()}
+            )}
               </div>
             </div>
           </div>
